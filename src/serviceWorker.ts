@@ -9,6 +9,7 @@
 
 // To learn more about the benefits of this model and instructions on how to
 // opt-in, read http://bit.ly/CRA-PWA
+import { applicationServerPublicKey } from './pubkey'
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
@@ -20,15 +21,47 @@ const isLocalhost = Boolean(
     )
 )
 
+const RegisterAPI = '/sw/register'
+
 interface Config {
   onSuccess?: (registration: ServiceWorkerRegistration) => void
   onUpdate?: (registration: ServiceWorkerRegistration) => void
+}
+
+function urlB64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  return new Uint8Array(rawData.length).map((v, i) => {
+    return rawData.charCodeAt(i)
+  })
 }
 
 function registerValidSW(swUrl: string, config?: Config): void {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
+      // Register subscription
+      registration.pushManager
+        .subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8Array(applicationServerPublicKey),
+        })
+        .then(subscription => {
+          console.log('Subscribe OK:', subscription)
+          // send serviceworker information to push service
+          return fetch(RegisterAPI, {
+            method: 'POST',
+            body: JSON.stringify(subscription.toJSON()),
+          })
+        })
+        .then(() => {
+          console.log('Server Stored Subscription.')
+        })
+        .catch(err => {
+          console.log('Subscribe Error:', err)
+          console.error(err)
+        })
       registration.onupdatefound = () => {
         const installingWorker = registration.installing
         if (installingWorker == null) {
@@ -133,6 +166,7 @@ export function register(config?: Config): void {
     })
   }
 }
+
 export function unregister(): void {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(registration => {
