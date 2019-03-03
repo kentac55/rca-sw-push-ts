@@ -10,6 +10,7 @@
 // To learn more about the benefits of this model and instructions on how to
 // opt-in, read http://bit.ly/CRA-PWA
 import { applicationServerPublicKey } from './pubkey'
+import { RegisterAPI } from './endpoint'
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
@@ -20,8 +21,6 @@ const isLocalhost = Boolean(
       /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
     )
 )
-
-const RegisterAPI = '/sw/register'
 
 interface Config {
   onSuccess?: (registration: ServiceWorkerRegistration) => void
